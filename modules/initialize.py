@@ -17,3 +17,26 @@ functions:
 """
 
 #TODO: update documentation
+import RPi.GPIO as gpio
+
+def init_board():
+    SW = 22
+    IR = 16
+    DIR = 20
+    STEP = 21
+    DIR_M = 6
+    PWM = 13
+
+    gpio.setmode(gpio.BCM)
+    gpio.setup(SW, gpio.IN)
+
+    gpio.setmode(gpio.BCM)
+    gpio.setup(IR, gpio.IN)
+
+    gpio.setmode(gpio.BCM)
+    gpio.setup(DIR, gpio.OUT)
+    gpio.setup(STEP, gpio.OUT)
+    
+    gpio.setmode(gpio.BCM)
+    gpio.setup(DIR_M, gpio.OUT)
+    gpio.setup(PWM, gpio.OUT)
