@@ -5,20 +5,28 @@ import RPi.GPIO as GPIO
 import sys
 sys.path.append('/home/pi/.local/lib/python3.7/site-packages')
 
-from pid import PID
+from simple_pid import PID
 # Set up GPIO for PWM output
-GPIO.setmode(GPIO.BOARD)
-GPIO.setup(12, GPIO.OUT)
-pwm = GPIO.PWM(12, 50)  # 50 Hz PWM frequency
-pwm.start(0)  # Start with 0% duty cycle
+DIR = 6
+PWM = 13
+CW =1
+CCW =0
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(DIR, GPIO.OUT)
+GPIO.setup(PWM, GPIO.OUT)
+GPIO.output(DIR,CW)
+
+pi_pwm = GPIO.PWM(PWM,500)		#create PWM instance with frequency
+pi_pwm.start(0)	
 
 # Define PID parameters
-kp = 0.1
-ki = 0.01
-kd = 0.05
+kp = 10
+ki = 0.1
+kd = 1
 
 # Set desired position
-setpoint = 0  # Replace with your desired position
+setpoint = 320  # Replace with your desired position
 
 # Initialize PID controller
 pid = PID(kp, ki, kd, setpoint)
@@ -26,32 +34,43 @@ pid = PID(kp, ki, kd, setpoint)
 # initialize camera
 cap = cv2.VideoCapture(0)
 
-# define range of blue color in HSV
-lower_blue = np.array([110,50,50])
-upper_blue = np.array([130,255,255])
+# Define range of silver color in HSV format
+lower_silver = np.array([0, 0, 192])
+upper_silver = np.array([179, 25, 255])
+
+# Variable to keep track of position of ball in frame
+prevCircle = None
+dist = lambda x1,y1,x2,y2: (x1-x2)**2-(y1-y2)**2
 
 while True:
     # capture frame-by-frame
     ret, frame = cap.read()
 
-    # convert BGR to HSV
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    # Convert the image from BGR to Grayscale color space
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    # threshold the HSV image to get only blue colors
-    mask = cv2.inRange(hsv, lower_blue, upper_blue)
+    # Use gaussian blue on grayscale image to smooth out noise
+    blur = cv2.GaussianBlur(gray, (17,17), 0)
 
-    # find contours in the thresholded image
-    _, contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    # Detect circles using HoughCircles function
+    circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 180, param1=100, param2=30, minRadius=5, maxRadius=100)
 
-    # iterate through each contour and compute the bounding box
-    for cnt in contours:
-        area = cv2.contourArea(cnt)
-        if area > 500:
-            x,y,w,h = cv2.boundingRect(cnt)
-            cv2.rectangle(frame, (x,y), (x+w,y+h), (0,255,0), 2)
-    
+    # Draw best circle on the original image
+    chosen = [320,0]
+    if circles is not None:
+        circles = np.uint16(np.around(circles))
+        chosen = None
+        for i in circles[0, :]:
+            if chosen is None: chosen = i
+            if prevCircle is not None:
+                if dist(chosen[0],chosen[1],prevCircle[0],prevCircle[1]) <= dist(i[0],i[1],prevCircle[0],prevCircle[1]):
+                    chosen = i
+        cv2.circle(frame, (chosen[0],chosen[1]), 1, (0,100,100), 3)
+        cv2.circle(frame, (chosen[0],chosen[1]), chosen[2], (255,0,255), 3)
+        prevCircle = chosen
+    cv2.line(frame, (320,0),(320,640),(0,100,100),3)
     # current position of ball
-    position = -5 #TODO: Save position of ball from cv2 contours
+    position = chosen[0]
     
     # Compute error
     error = setpoint - position
@@ -60,8 +79,15 @@ while True:
     output = pid(error)
 
     # Map output to PWM signal
-    duty_cycle = output * 100  # Convert to percentage
-    pwm.ChangeDutyCycle(duty_cycle)
+    duty_cycle = error/10 # Convert to percentage
+    print(str(duty_cycle) + " " + str(error))
+    if (np.absolute(duty_cycle) < 50):
+        if(duty_cycle<0):
+            duty_cycle = -duty_cycle
+            GPIO.output(DIR,CCW)
+        if(duty_cycle>0):
+            GPIO.output(DIR,CW)
+        pi_pwm.ChangeDutyCycle(duty_cycle)
 
     # Wait for a short period of time before updating again
     time.sleep(0.01)
