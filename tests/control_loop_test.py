@@ -41,62 +41,67 @@ upper_silver = np.array([179, 25, 255])
 # Variable to keep track of position of ball in frame
 prevCircle = None
 dist = lambda x1,y1,x2,y2: (x1-x2)**2-(y1-y2)**2
+try:
+    while True:
+        # capture frame-by-frame
+        ret, frame = cap.read()
 
-while True:
-    # capture frame-by-frame
-    ret, frame = cap.read()
+        # Convert the image from BGR to Grayscale color space
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    # Convert the image from BGR to Grayscale color space
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # Use gaussian blue on grayscale image to smooth out noise
+        blur = cv2.GaussianBlur(gray, (17,17), 0)
 
-    # Use gaussian blue on grayscale image to smooth out noise
-    blur = cv2.GaussianBlur(gray, (17,17), 0)
+        # Detect circles using HoughCircles function
+        circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 180, param1=100, param2=30, minRadius=5, maxRadius=100)
 
-    # Detect circles using HoughCircles function
-    circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 180, param1=100, param2=30, minRadius=5, maxRadius=100)
+        # Draw best circle on the original image
+        chosen = [320,0]
+        if circles is not None:
+            circles = np.uint16(np.around(circles))
+            chosen = None
+            for i in circles[0, :]:
+                if chosen is None: chosen = i
+                if prevCircle is not None:
+                    if dist(chosen[0],chosen[1],prevCircle[0],prevCircle[1]) <= dist(i[0],i[1],prevCircle[0],prevCircle[1]):
+                        chosen = i
+            cv2.circle(frame, (chosen[0],chosen[1]), 1, (0,100,100), 3)
+            cv2.circle(frame, (chosen[0],chosen[1]), chosen[2], (255,0,255), 3)
+            prevCircle = chosen
+        cv2.line(frame, (320,0),(320,640),(0,100,100),3)
+        # current position of ball
+        position = chosen[0]
+        
+        # Compute error
+        error = setpoint - position
 
-    # Draw best circle on the original image
-    chosen = [320,0]
-    if circles is not None:
-        circles = np.uint16(np.around(circles))
-        chosen = None
-        for i in circles[0, :]:
-            if chosen is None: chosen = i
-            if prevCircle is not None:
-                if dist(chosen[0],chosen[1],prevCircle[0],prevCircle[1]) <= dist(i[0],i[1],prevCircle[0],prevCircle[1]):
-                    chosen = i
-        cv2.circle(frame, (chosen[0],chosen[1]), 1, (0,100,100), 3)
-        cv2.circle(frame, (chosen[0],chosen[1]), chosen[2], (255,0,255), 3)
-        prevCircle = chosen
-    cv2.line(frame, (320,0),(320,640),(0,100,100),3)
-    # current position of ball
-    position = chosen[0]
-    
-    # Compute error
-    error = setpoint - position
+        # Compute PID output
+        output = pid(error)
 
-    # Compute PID output
-    output = pid(error)
+        # Map output to PWM signal
+        duty_cycle = error/10 # Convert to percentage
+        if (np.absolute(duty_cycle) < 50):
+            print(str(duty_cycle) + " " + str(error))
+            if(duty_cycle<0):
+                duty_cycle = -duty_cycle
+                GPIO.output(DIR,CCW)
+            elif(duty_cycle>0):
+                GPIO.output(DIR,CW)
+            pi_pwm.ChangeDutyCycle(duty_cycle)
 
-    # Map output to PWM signal
-    duty_cycle = error/10 # Convert to percentage
-    print(str(duty_cycle) + " " + str(error))
-    if (np.absolute(duty_cycle) < 50):
-        if(duty_cycle<0):
-            duty_cycle = -duty_cycle
-            GPIO.output(DIR,CCW)
-        if(duty_cycle>0):
-            GPIO.output(DIR,CW)
-        pi_pwm.ChangeDutyCycle(duty_cycle)
+        # Wait for a short period of time before updating again
+        time.sleep(0.01)
 
-    # Wait for a short period of time before updating again
-    time.sleep(0.01)
+        # display the resulting frame
+        cv2.imshow('frame',frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
-    # display the resulting frame
-    cv2.imshow('frame',frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+    # release the capture
+    cap.release()
+    cv2.destroyAllWindows()
 
-# release the capture
-cap.release()
-cv2.destroyAllWindows()
+except KeyboardInterrupt: # If there is a KeyboardInterrupt (when you press ctrl+c), exit the program and cleanup
+    print("Cleaning up!")
+    GPIO.cleanup()
+
