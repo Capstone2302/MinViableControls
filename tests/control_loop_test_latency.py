@@ -47,12 +47,22 @@ dist = lambda x1,y1,x2,y2: (x1-x2)**2-(y1-y2)**2
 controlLoopTimes = [0] * 100
 counter = 0;
 start_time = time.time()
-try:
-    while True:
-        # capture frame-by-frame
-        # start_time = time.time()
-        ret, frame = cap.read()
 
+import picamera
+import picamera.array
+
+# Initialize the camera and the output array
+camera = picamera.PiCamera()
+camera.resolution = (640, 480)
+rawCapture = picamera.array.PiRGBArray(camera, size=(640,480))
+
+# Allow the camera to warm up
+time.sleep(2)
+
+try:
+    # Continuously capture frames from the camera
+    for frame in camera.capture_continuous(rawCapture, format='rgb', use_video_port=True):
+        frame = frame.array
         # Convert the image from BGR to Grayscale color space
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -109,10 +119,12 @@ try:
         counter+=1
         if(counter%100==0):
             print("Average: " + str(np.mean(controlLoopTimes)) + 
-                  " s. Maximum: " + str(max(controlLoopTimes)) + 
-                  " s. Minimum: " + str(min(controlLoopTimes)) + "s")
-
-        
+                " s. Maximum: " + str(max(controlLoopTimes)) + 
+                " s. Minimum: " + str(min(controlLoopTimes)) + "s")
+        pass
+    
+        # Clear the output array for the next frame
+        rawCapture.truncate(0)
 
     # release the capture
     cap.release()
