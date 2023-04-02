@@ -41,9 +41,14 @@ upper_silver = np.array([179, 25, 255])
 # Variable to keep track of position of ball in frame
 prevCircle = None
 dist = lambda x1,y1,x2,y2: (x1-x2)**2-(y1-y2)**2
+
+controlLoopTimes = [0] * 100
+counter = 0;
+start_time = time.time()
 try:
     while True:
         # capture frame-by-frame
+        # start_time = time.time()
         ret, frame = cap.read()
 
         # Convert the image from BGR to Grayscale color space
@@ -53,7 +58,7 @@ try:
         blur = cv2.GaussianBlur(gray, (17,17), 0)
 
         # Detect circles using HoughCircles function
-        circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 180, param1=100, param2=30, minRadius=5, maxRadius=100)
+        circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 180, param1=100, param2=30, minRadius=13, maxRadius=75)
 
         # Draw best circle on the original image
         chosen = [320,0]
@@ -69,6 +74,8 @@ try:
             cv2.circle(frame, (chosen[0],chosen[1]), chosen[2], (255,0,255), 3)
             prevCircle = chosen
         cv2.line(frame, (320,0),(320,640),(0,100,100),3)
+        cv2.line(frame, (0,200),(320,640),(0,100,100),3)
+
         # current position of ball
         position = chosen[0]
         
@@ -79,23 +86,31 @@ try:
         output = pid(error)
 
         # Map output to PWM signal
-        duty_cycle = error/10 # Convert to percentage
-        if (np.absolute(duty_cycle) < 50):
-            print(str(duty_cycle) + " " + str(error))
+        duty_cycle = error/1000 # Convert to percentage
+        if (np.absolute(duty_cycle) < 50 ):
             if(duty_cycle<0):
                 duty_cycle = -duty_cycle
                 GPIO.output(DIR,CCW)
             elif(duty_cycle>0):
-                GPIO.output(DIR,CW)
+                GPIO.output(DIR,CW)     
             pi_pwm.ChangeDutyCycle(duty_cycle)
-
-        # Wait for a short period of time before updating again
-        time.sleep(0.01)
 
         # display the resulting frame
         cv2.imshow('frame',frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+        
+        delta = time.time() - start_time
+        start_time = time.time()
+        controlLoopTimes.insert(0,delta)
+        controlLoopTimes.pop()
+        counter+=1
+        if(counter%100==0):
+            print("Average: " + str(np.mean(controlLoopTimes)) + 
+                  " s. Maximum: " + str(max(controlLoopTimes)) + 
+                  " s. Minimum: " + str(min(controlLoopTimes)) + "s")
+
+        
 
     # release the capture
     cap.release()
