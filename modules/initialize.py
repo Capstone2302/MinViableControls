@@ -17,6 +17,7 @@ functions:
 """
 
 #TODO: update documentation
+#TODO: call these variables from somehwre or make them callable.
 import RPi.GPIO as gpio
 
 def init_board():
