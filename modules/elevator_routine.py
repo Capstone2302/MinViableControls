@@ -27,6 +27,8 @@ SW = 22
 def homing_sequence():
     while(gpio.input(SW)):
         print("homing")
+
+        
 #This will be called only when the IR sensor says there is a ball 
 
 # do the routine for the stepper motor test, get to the top and then get to the bottom and wait to be called again 
