@@ -26,7 +26,7 @@ ki = 0.1
 kd = 1
 
 # Set desired position
-setpoint = 320  # Replace with your desired position
+setpoint = 160  # Replace with your desired position
 
 # Initialize PID controller
 pid = PID(kp, ki, kd, setpoint)
@@ -53,24 +53,24 @@ import picamera.array
 
 # Initialize the camera and the output array
 camera = picamera.PiCamera()
-camera.resolution = (640, 480)
-rawCapture = picamera.array.PiRGBArray(camera, size=(640,480))
+camera.resolution = (340, 240)
+rawCapture = picamera.array.PiRGBArray(camera, size=(340, 240))
 
 # Allow the camera to warm up
 time.sleep(2)
 
 try:
     # Continuously capture frames from the camera
-    for frame in camera.capture_continuous(rawCapture, format='rgb', use_video_port=True):
+    for frame in camera.capture_continuous(rawCapture, format='bgr', use_video_port=True):
         frame = frame.array
         # Convert the image from BGR to Grayscale color space
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         # Use gaussian blue on grayscale image to smooth out noise
-        blur = cv2.GaussianBlur(gray, (17,17), 0)
+        blur = cv2.GaussianBlur(gray, (7,7), 0)
 
         # Detect circles using HoughCircles function
-        circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 180, param1=100, param2=30, minRadius=13, maxRadius=75)
+        circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 180, param1=100, param2=30, minRadius=6, maxRadius=30)
 
         # Draw best circle on the original image
         chosen = [320,0]
@@ -85,8 +85,7 @@ try:
             cv2.circle(frame, (chosen[0],chosen[1]), 1, (0,100,100), 3)
             cv2.circle(frame, (chosen[0],chosen[1]), chosen[2], (255,0,255), 3)
             prevCircle = chosen
-        cv2.line(frame, (320,0),(320,640),(0,100,100),3)
-        cv2.line(frame, (0,200),(320,640),(0,100,100),3)
+        cv2.line(frame, (160,0),(160,640),(0,100,100),3)
 
         # current position of ball
         position = chosen[0]
@@ -99,7 +98,7 @@ try:
 
         # Map output to PWM signal
         duty_cycle = error/1000 # Convert to percentage
-        if (np.absolute(duty_cycle) < 50 ):
+        if (np.absolute(duty_cycle) < 30 ):
             if(duty_cycle<0):
                 duty_cycle = -duty_cycle
                 GPIO.output(DIR,CCW)
@@ -117,14 +116,16 @@ try:
         controlLoopTimes.insert(0,delta)
         controlLoopTimes.pop()
         counter+=1
-        if(counter%100==0):
+        if(counter%10==0):
             print("Average: " + str(np.mean(controlLoopTimes)) + 
                 " s. Maximum: " + str(max(controlLoopTimes)) + 
-                " s. Minimum: " + str(min(controlLoopTimes)) + "s")
+                " s. Minimum: " + str(min(controlLoopTimes)) + "s"
+                + " Pwm: " + str(duty_cycle))
         pass
     
         # Clear the output array for the next frame
-        rawCapture.truncate(0)
+        rawCapture.truncate()
+        rawCapture.seek(0)
 
     # release the capture
     cap.release()
