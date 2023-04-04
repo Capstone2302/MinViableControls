@@ -13,12 +13,17 @@ from modules.elevator_routine import homing_sequence, elevator_routine
 
 SW = 22
 init_board()
-homing_sequence()
+# homing_sequence()
+try:
+    while(True):
+        if(gpio.input(SW) == False):
+            elevator_routine()
 
-while(True):
-    if(gpio.input(SW) == False):
-        elevator_routine()
+        else:
+            print("print no ball")
 
-    else:
-        print("print no ball")
+            
+except KeyboardInterrupt: # If there is a KeyboardInterrupt (when you press ctrl+c), exit the program and cleanup
+    print("Cleaning up!")
+    gpio.cleanup()
 
