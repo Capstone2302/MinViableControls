@@ -29,16 +29,16 @@ kd = 1
 setpoint = 160  # Replace with your desired position
 
 # Initialize PID controller
-pid = PID(kp, ki, kd, setpoint)
+# pid = PID(kp, ki, kd, setpoint)
 
 # initialize camera
 cap = cv2.VideoCapture(0)
 cap.set(3, 640)
 cap.set(4, 480)
 
-# Define range of silver color in HSV format
-lower_silver = np.array([0, 0, 192])
-upper_silver = np.array([179, 25, 255])
+# Define range of ball color in HSV format
+lower_ball = np.array([0, 0, 192])
+upper_ball = np.array([179, 25, 255])
 
 # Variable to keep track of position of ball in frame
 prevCircle = None
