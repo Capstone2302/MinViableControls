@@ -7,22 +7,23 @@ import RPi.GPIO as gpio
 from modules.initialize import init_board
 from modules.elevator_routine import homing_sequence, elevator_routine
 
-#TODO: intilize board
 #TODO: Homing sequence
-#TODO: while true loop
+#TODO: Make look up table (?) someway of not constantly re intializing the values
 
-SW = 22
+IR = 16
+
+
 init_board()
+print("init done")
 # homing_sequence()
 try:
     while(True):
-        if(gpio.input(SW) == False):
+        if(gpio.input(IR) == False):
             elevator_routine()
-
         else:
             print("print no ball")
 
-            
+
 except KeyboardInterrupt: # If there is a KeyboardInterrupt (when you press ctrl+c), exit the program and cleanup
     print("Cleaning up!")
     gpio.cleanup()
