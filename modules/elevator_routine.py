@@ -53,14 +53,19 @@ def homing_sequence():
 
 def elevator_routine():
     gpio.output(DIR,CCW)
-    for x in range(300): #2300
+    for x in range(2000): #2300
             gpio.output(STEP,gpio.HIGH)
             sleep(.000500)
             gpio.output(STEP,gpio.LOW)
             sleep(.000500)
-
+    for x in range(300): #2300
+            gpio.output(STEP,gpio.HIGH)
+            sleep(.00100)
+            gpio.output(STEP,gpio.LOW)
+            sleep(.00100)    
+    sleep(0.2)
     gpio.output(DIR,CW) #2300
-    for x in range(300):
+    for x in range(2325):
             gpio.output(STEP,gpio.HIGH)
             sleep(.000300)
             gpio.output(STEP,gpio.LOW)
