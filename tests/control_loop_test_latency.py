@@ -29,7 +29,7 @@ kd = 1
 setpoint = 160  # Replace with your desired position
 
 # Initialize PID controller
-# pid = PID(kp, ki, kd, setpoint)
+pid = PID(kp, ki, kd, setpoint)
 
 # initialize camera
 cap = cv2.VideoCapture(0)
