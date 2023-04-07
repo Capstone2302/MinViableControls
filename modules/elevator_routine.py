@@ -46,7 +46,6 @@ def homing_sequence():
                 sleep(.00100)
             if gpio.input(SW):
                 print("closed")
-                gpio.cleanup()
                 break
 
 def elevator_routine():
