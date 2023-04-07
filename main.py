@@ -15,7 +15,7 @@ IR = 16
 
 init_board()
 print("init done")
-# homing_sequence()
+homing_sequence()
 try:
     while(True):
         if(gpio.input(IR) == False):
