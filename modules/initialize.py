@@ -17,7 +17,10 @@ functions:
 """
 
 #TODO: update documentation
+<<<<<<< HEAD
 
+=======
+>>>>>>> 78cf46562e3b2ce2dad40c9ae82c8f06c7610c77
 import RPi.GPIO as gpio
 
 def init_board():
@@ -41,4 +44,7 @@ def init_board():
     gpio.setmode(gpio.BCM)
     gpio.setup(DIR_M, gpio.OUT)
     gpio.setup(PWM, gpio.OUT)
+<<<<<<< HEAD
 
+=======
+>>>>>>> 78cf46562e3b2ce2dad40c9ae82c8f06c7610c77
