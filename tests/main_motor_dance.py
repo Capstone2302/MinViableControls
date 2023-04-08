@@ -20,18 +20,18 @@ try:
     while True:
         sleep(2)
         gpio.output(DIR,CW)
-        for duty in range(0,101,1):
+        for duty in range(0,50,1):
             pi_pwm.ChangeDutyCycle(duty) #provide duty cycle in the range 0-100
-            sleep(0.01) 
+            sleep(0.1) 
         pi_pwm.ChangeDutyCycle(0) #breaking (check the pwm out put when writing 0 vs just not writing anything)
         sleep(5)
 
 
         pi_pwm.ChangeDutyCycle(0)
         gpio.output(DIR,CCW)
-        for duty in range(0,101,1):
+        for duty in range(0,50,1):
             pi_pwm.ChangeDutyCycle(duty)
-            sleep(0.01)
+            sleep(0.1)
 
         pi_pwm.ChangeDutyCycle(0)
         
