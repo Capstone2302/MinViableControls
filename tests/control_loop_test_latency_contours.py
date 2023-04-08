@@ -28,7 +28,7 @@ ki = 0.1
 kd = 1
 
 # Set desired position
-setpoint = 340/2  # Replace with your desired position
+setpoint = 120/2  # Replace with your desired position
 
 # Initialize PID controller
 pid = PID(kp, ki, kd, setpoint)
@@ -68,38 +68,36 @@ try:
     for frame in camera.capture_continuous(rawCapture, format='bgr', use_video_port=True):
         frame = frame.array[110:150,100:220,:]
 
+        blurred = cv2.GaussianBlur(frame, (3, 3), 0)
+
         # hsvFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         colorMask = cv2.inRange(frame, lower_ball, upper_ball)
+        # colorMask = cv2.erode(colorMask, None, iterations=2)
+        # colorMask = cv2.dilate(colorMask, None, iterations=2)
 
-        # fgMask = backSub.apply(frame)
+        cnts = cv2.findContours(colorMask.copy(), cv2.RETR_EXTERNAL,
+                            cv2.CHAIN_APPROX_SIMPLE)
+        cnts = imutils.grab_contours(cnts)
 
-        contours = cv2.findContours(colorMask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        center = None
 
-        contours_img = 
-
-        # contour_img = cv2.drawContours(colorMask.copy(), contours, -1, (0,255,0), 2)
-
-        cnts = imutils.grab_contours(contours)
-
-        if(len(cnts) > 0):
+        if len(cnts) > 0:
             c = max(cnts, key=cv2.contourArea)
-            ((x,y),radius) = cv2.minEnclosingCircle(c)
-
-
-            # Compute moments of contour
+            ((x, y), radius) = cv2.minEnclosingCircle(c)
             M = cv2.moments(c)
-
-            # Compute x, y coordinates of centroid
-            if M["m00"] != 0:
-                cX = int(M["m10"] / M["m00"])
-                cY = int(M["m01"] / M["m00"])
-                cv2.circle(colorMask, (int(x),int(y)), int(radius), (0, 255,255), 2)
+            if M['m00'] != 0:
+                center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
             else:
-                cX, cY = setpoint, 0
+                center = (int(setpoint), int(120))
+
+            # To see the centroid clearly
+            if radius > 3:
+                cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 5)
+                cv2.circle(frame, center, 5, (0, 0, 255), -1)
 
         # current position of ball
         try:
-            position = cX
+            position = center[0]
         except:
             position = setpoint
         
@@ -110,8 +108,8 @@ try:
         output = pid(error)
 
         # Map output to PWM signal
-        duty_cycle = error/100 # Convert to percentage
-        if (np.absolute(duty_cycle) > 30 ): #check if we are not going at full speed
+        duty_cycle = error/0.75 # Convert to percentage
+        if (np.absolute(duty_cycle) > 99 ): #check if we are not going at full speed
             break
 
         if(duty_cycle<0):
@@ -122,11 +120,9 @@ try:
         pi_pwm.ChangeDutyCycle(duty_cycle)
 
         # display the resulting frame
-        # cv2.imshow('Frame', frame)
-        # cv2.imshow('FG Mask', fgMask)
-        cv2.line(colorMask,(int(setpoint),0),(int(setpoint),240), (255,0,0),5)
+        cv2.line(frame,(int(setpoint),0),(int(setpoint),240), (255,0,0),5)
+        cv2.imshow('Frame', frame)
         cv2.imshow('Color mask', colorMask)
-        # cv2.imshow('Contour mask', contour_img)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
         
