@@ -37,8 +37,11 @@ cap.set(3, 640)
 cap.set(4, 480)
 
 # Define range of ball color in HSV format
-lower_ball = np.array([0, 0, 192])
-upper_ball = np.array([179, 25, 255])
+lower_bgr = np.array([0,0,0])
+upper_bgr = np.array([255,255,255])
+lower_hsv = np.array([0,0,0])
+upper_hsv = np.array([0,0,80])
+
 
 # Variable to keep track of position of ball in frame
 prevCircle = None
@@ -62,6 +65,7 @@ time.sleep(2)
 try:
     # Continuously capture frames from the camera
     for frame in camera.capture_continuous(rawCapture, format='bgr', use_video_port=True):
+<<<<<<< Updated upstream:tests/control_loop_test_latency.py
         frame = frame.array
         # Convert the image from BGR to Grayscale color space
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -86,6 +90,15 @@ try:
             cv2.circle(frame, (chosen[0],chosen[1]), chosen[2], (255,0,255), 3)
             prevCircle = chosen
         cv2.line(frame, (160,0),(160,640),(0,100,100),3)
+=======
+        frame = frame.array[110:150,100:220,:]
+
+        hsvFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+        colorMask = cv2.inRange(hsvFrame, lower_hsv, upper_hsv)
+
+        fgMask = backSub.apply(frame)
+>>>>>>> Stashed changes:tests/control_loop_test_latency_backsub.py
 
         # current position of ball
         position = chosen[0]
@@ -107,7 +120,9 @@ try:
             pi_pwm.ChangeDutyCycle(duty_cycle)
 
         # display the resulting frame
-        cv2.imshow('frame',frame)
+        cv2.imshow('Frame', frame)
+        cv2.imshow('FG Mask', fgMask)
+        cv2.imshow('Color Mask', colorMask)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
         
@@ -121,6 +136,8 @@ try:
                 " s. Maximum: " + str(max(controlLoopTimes)) + 
                 " s. Minimum: " + str(min(controlLoopTimes)) + "s"
                 + " Pwm: " + str(duty_cycle))
+            print( lower_hsv)
+            print(upper_hsv)
         pass
     
         # Clear the output array for the next frame
