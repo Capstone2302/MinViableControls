@@ -43,8 +43,11 @@ lower_ball = np.array([25,20,10])
 upper_ball = np.array([80,65,50])
 
 # Variable to keep track of position of ball in frame
-prevCircle = None
+prevPosition = setpoint
+speed = 0
 dist = lambda x1,y1,x2,y2: (x1-x2)**2-(y1-y2)**2
+def errorFunc(x):
+    return x**2
 
 controlLoopTimes = [0] * 100
 counter = 0
@@ -97,26 +100,32 @@ try:
 
         # current position of ball
         try:
+            delta = time.time() - start_time
             position = center[0]
+            speed = (prevPosition - position) / delta
         except:
             position = setpoint
+            speed = 0 
         
         # Compute error
         error = setpoint - position
 
         # Compute PID output  
-        output = pid(error)
+        # output = pid(error)
 
         # Map output to PWM signal
-        duty_cycle = error/0.75 # Convert to percentage
-        if (np.absolute(duty_cycle) > 99 ): #check if we are not going at full speed
-            break
+        duty_cycle = 1*errorFunc(error) + 0.00*speed
+        # if (np.absolute(duty_cycle) > 99 ): # stop code if motor maxes out to prevent damage
+        #     print("Max motor speed hit")
+        #     break
 
         if(duty_cycle<0):
             duty_cycle = -duty_cycle
             GPIO.output(DIR,CCW)
         elif(duty_cycle>0):
-            GPIO.output(DIR,CW)     
+            GPIO.output(DIR,CW)
+        if(duty_cycle>100):
+            duty_cycle=100
         pi_pwm.ChangeDutyCycle(duty_cycle)
 
         # display the resulting frame
@@ -126,16 +135,16 @@ try:
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
         
-        delta = time.time() - start_time
+        
         start_time = time.time()
         controlLoopTimes.insert(0,delta)
         controlLoopTimes.pop()
         counter+=1
         if(counter%100==0):
             print("Average: " + str(np.mean(controlLoopTimes)) + 
-                # " s. Maximum: " + str(max(controlLoopTimes)) + 
-                # " s. Minimum: " + str(min(controlLoopTimes)) + "s"
-                 " Pwm: " + str(duty_cycle) + "Error: " + str(error))
+                " s. Maximum: " + str(max(controlLoopTimes)) + 
+                " s. Minimum: " + str(min(controlLoopTimes)) + "s"
+                + " Pwm: " + str(duty_cycle) + "Error: " + str(error))
         pass
     
         # Clear the output array for the next frame
