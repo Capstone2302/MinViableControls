@@ -17,13 +17,15 @@ functions:
 """
 
 #TODO: update documentation
+#TODO: call these variables from somehwre or make them callable.
+
 import RPi.GPIO as gpio
 
 def init_board():
     SW = 22
     IR = 16
-    DIR = 20
-    STEP = 21
+    DIR = 21
+    STEP = 20
     DIR_M = 6
     PWM = 13
 
