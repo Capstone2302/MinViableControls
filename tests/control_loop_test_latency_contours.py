@@ -46,10 +46,21 @@ upper_ball = np.array([80,65,50])
 prevPosition = setpoint
 speed = 0
 dist = lambda x1,y1,x2,y2: (x1-x2)**2-(y1-y2)**2
-def errorFunc(x):
-    return x**2
+def errorFunc(x,x_dot):
+    return 1.25*gain(x)+0.02*x_dot
 
-controlLoopTimes = [0] * 100
+def gain(x):
+    if(x<-10):
+        return -1*(1/32*x**2-3/8*x+25/8)
+    if(x<0):
+        return x
+    if(x<10):
+        return x
+    return 1/32*x**2+3/8*x+25/8
+
+controlLoopTimes = [0] * 1000
+positionLog = [0] * 1000
+errorsLog = [0] * 1000
 counter = 0
 start_time = time.time()
 
@@ -101,6 +112,7 @@ try:
         # current position of ball
         try:
             delta = time.time() - start_time
+            prevPosition = position
             position = center[0]
             speed = (prevPosition - position) / delta
         except:
@@ -114,7 +126,7 @@ try:
         # output = pid(error)
 
         # Map output to PWM signal
-        duty_cycle = 1*errorFunc(error) + 0.00*speed
+        duty_cycle = errorFunc(error, speed)
         # if (np.absolute(duty_cycle) > 99 ): # stop code if motor maxes out to prevent damage
         #     print("Max motor speed hit")
         #     break
@@ -139,12 +151,23 @@ try:
         start_time = time.time()
         controlLoopTimes.insert(0,delta)
         controlLoopTimes.pop()
+        positionLog.insert(0,position)
+        positionLog.pop()
+        
+        errorsLog.insert(0,errorFunc(error, speed))
+        errorsLog.pop()
         counter+=1
-        if(counter%100==0):
+        if(counter%1000==0):
             print("Average: " + str(np.mean(controlLoopTimes)) + 
                 " s. Maximum: " + str(max(controlLoopTimes)) + 
                 " s. Minimum: " + str(min(controlLoopTimes)) + "s"
                 + " Pwm: " + str(duty_cycle) + "Error: " + str(error))
+            with open('/home/pi/Documents/WheelLogs/PositionLogs/PositionLog' + str(time.time_ns()) + '.txt', 'w') as tfile:
+                tfile.write('Position' + 'n')
+                tfile.write('\n'.join(str(x) for x in positionLog))
+            with open('/home/pi/Documents/WheelLogs/ErrorLogs/ErrorLog' + str(time.time_ns()) + '.txt', 'w') as tfile:
+                tfile.write('Error' + 'n')
+                tfile.write('\n'.join(str(x) for x in errorsLog))
         pass
     
         # Clear the output array for the next frame
