@@ -42,3 +42,6 @@ def init_board():
     gpio.setmode(gpio.BCM)
     gpio.setup(DIR_M, gpio.OUT)
     gpio.setup(PWM, gpio.OUT)
+
+    # pi_pwm = gpio.PWM(PWM,100)		#create PWM instance with frequency
+    # pi_pwm.start(0)	

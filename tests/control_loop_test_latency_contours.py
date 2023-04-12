@@ -144,6 +144,7 @@ try:
         cv2.line(frame,(int(setpoint),0),(int(setpoint),240), (255,0,0),5)
         cv2.imshow('Frame', frame)
         cv2.imshow('Color mask', colorMask)
+        cv2.imshow('Raw capture', rawCapture)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
         
